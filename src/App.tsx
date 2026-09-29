@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import ReviewPanel, { type ReviewStatus } from "./ReviewPanel";
+import { mockReviewProvider, sceneFingerprint, type ReviewFinding, type ReviewResult } from "./review";
 import { cloneLayers, DEFAULT_LAYERS, drawScene, getResizeHandle, hitTestLayer, type SceneLayer } from "./scene";
 
 const STORAGE_KEY = "scene-pilot:stage-2";
@@ -36,6 +38,7 @@ function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layersRef = useRef<SceneLayer[]>([]);
   const dragRef = useRef<DragState | null>(null);
+  const reviewAbortRef = useRef<AbortController | null>(null);
   const [layers, setLayers] = useState<SceneLayer[]>(restoreLayers);
   const [selectedLayer, setSelectedLayer] = useState<string | null>("hero");
   const [past, setPast] = useState<SceneLayer[][]>([]);
@@ -43,7 +46,15 @@ function App() {
   const [tab, setTab] = useState<"intent" | "object" | "assistant">("intent");
   const [intent, setIntent] = useState(() => localStorage.getItem(INTENT_KEY) ?? "她在等最后一班车。雨夜要安静、克制，让观众先注意到她，再感受到站台的空旷。人物保持沉默，不要添加额外角色。");
   const [saveState, setSaveState] = useState("已保存");
+  const [reviewStatus, setReviewStatus] = useState<ReviewStatus>("idle");
+  const [reviewResult, setReviewResult] = useState<ReviewResult | null>(null);
+  const [reviewError, setReviewError] = useState("");
+  const [activeFindingId, setActiveFindingId] = useState<string | null>(null);
   const selected = layers.find((layer) => layer.id === selectedLayer) ?? null;
+  const activeFinding = reviewResult?.findings.find((finding) => finding.id === activeFindingId) ?? null;
+  const activeTarget = activeFinding?.targetIds?.map((id) => layers.find((layer) => layer.id === id)).find(Boolean);
+  const reviewRegion = activeFinding?.region ?? (activeTarget ? { x: clamp(activeTarget.x - .08, 0, .84), y: clamp(activeTarget.y - .18, 0, .64), width: .16, height: .36 } : null);
+  const reviewIsStale = Boolean(reviewResult && reviewResult.sceneFingerprint !== sceneFingerprint(layers, intent));
   layersRef.current = layers;
 
   useEffect(() => {
@@ -105,6 +116,45 @@ function App() {
     commit(layersRef.current.filter((layer) => layer.id !== selected.id));
     setSelectedLayer("hero");
   };
+
+  const runReview = async () => {
+    reviewAbortRef.current?.abort();
+    const controller = new AbortController();
+    reviewAbortRef.current = controller;
+    setReviewStatus("loading");
+    setReviewError("");
+    setActiveFindingId(null);
+    setTab("assistant");
+    try {
+      const result = await mockReviewProvider.review({
+        intent,
+        shotType: "中景",
+        durationSeconds: 4,
+        moods: ["克制", "孤独", "期待"],
+        constraints: ["人物保持沉默", "不添加额外角色"],
+        layers: cloneLayers(layersRef.current),
+        canvasSnapshot: canvasRef.current?.toDataURL("image/png"),
+      }, controller.signal);
+      if (controller.signal.aborted) return;
+      setReviewResult(result);
+      setActiveFindingId(result.findings[0]?.id ?? null);
+      setReviewStatus("success");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setReviewError(error instanceof Error ? error.message : "评审返回了无法识别的错误");
+      setReviewStatus("error");
+    } finally {
+      if (reviewAbortRef.current === controller) reviewAbortRef.current = null;
+    }
+  };
+
+  const selectFinding = (finding: ReviewFinding) => {
+    setActiveFindingId(finding.id);
+    const target = finding.targetIds?.map((id) => layersRef.current.find((layer) => layer.id === id)).find(Boolean);
+    if (target) setSelectedLayer(target.id);
+  };
+
+  useEffect(() => () => reviewAbortRef.current?.abort(), []);
 
   const canvasPoint = (event: ReactPointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -171,11 +221,11 @@ function App() {
         <div className="left-bottom"><span className="project-cover"/><span><strong>雨停之前</strong><small>本地自动保存</small></span><button className="icon-button more-button"><Icon name="more"/></button></div>
       </aside>
       <section className="stage-column"><div className="stage-toolbar"><div className="stage-label"><span className="record-dot"/>镜头 01 <span className="toolbar-divider"/> {selected?`已选择：${selected.name}`:"点击画面选择对象"}</div><div className="tool-group"><button className={`icon-button ${past.length?"":"disabled-tool"}`} onClick={undo} aria-label="撤销" disabled={!past.length}><Icon name="undo"/></button><button className={`icon-button ${future.length?"":"disabled-tool"}`} onClick={redo} aria-label="重做" disabled={!future.length}><Icon name="redo"/></button><span className="toolbar-divider"/><button className="zoom-button"><Icon name="zoom"/> 68%</button><button className="icon-button" onClick={resetScene} aria-label="重置场景"><Icon name="reset"/></button></div></div>
-        <div className="stage-wrap"><div className="stage-canvas"><canvas ref={canvasRef} className={dragRef.current?"dragging":""} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} aria-label="雨夜车站分镜画面，可选择和拖动场景对象"/><div className="safe-frame"/><span className="canvas-note">FRAME 01 <span>·</span> 1920 × 1080</span></div></div>
+        <div className="stage-wrap"><div className="stage-canvas"><canvas ref={canvasRef} className={dragRef.current?"dragging":""} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endPointer} onPointerCancel={endPointer} aria-label="雨夜车站分镜画面，可选择和拖动场景对象"/><div className="safe-frame"/>{tab==="assistant" && reviewStatus==="success" && reviewRegion && <div className="review-region" style={{left:`${reviewRegion.x*100}%`,top:`${reviewRegion.y*100}%`,width:`${reviewRegion.width*100}%`,height:`${reviewRegion.height*100}%`}}/>}<span className="canvas-note">FRAME 01 <span>·</span> 1920 × 1080</span></div></div>
         <div className="stage-footer"><span><i className="keyboard-key">Drag</i> 移动对象</span><span><i className="keyboard-key">Corner</i> 缩放对象</span><span><i className="keyboard-key">⌘Z</i> 撤销</span><span className="footer-spacer"/><button className="timeline-toggle"><Icon name="film"/>时间轴 <span>⌄</span></button></div><div className="timeline"><div className="timeline-ruler"><span>00:00</span><span>00:01</span><span>00:02</span><span>00:03</span><span>00:04</span></div><div className="timeline-track"><span className="playhead"/><span className="clip-block"><i/>站台 · 等待 <small>04:00</small></span><span className="track-end">+</span></div></div>
       </section>
       <aside className="right-panel"><div className="right-tabs"><button className={tab==="intent"?"selected-tab":""} onClick={()=>setTab("intent")}>创作意图</button><button className={tab==="object"?"selected-tab":""} onClick={()=>setTab("object")}>对象属性</button><button className={tab==="assistant"?"selected-tab":""} onClick={()=>setTab("assistant")}><Icon name="spark"/> AI 协作</button></div>
-        {tab==="intent"?<div className="intent-panel"><div className="intent-heading"><span className="panel-eyebrow">SHOT DIRECTION</span><h2>这一镜想表达什么？</h2><p>让评审和生成都围绕你的叙事目标展开。</p></div><label className="field-label" htmlFor="intent">导演意图</label><textarea id="intent" value={intent} onChange={(e)=>setIntent(e.target.value)}/><div className="field-row"><label><span className="field-label">镜头类型</span><button className="select-field">中景 <span>⌄</span></button></label><label><span className="field-label">镜头时长</span><button className="select-field">4 秒 <span>⌄</span></button></label></div><div className="field-group"><span className="field-label">情绪基调</span><div className="mood-tags"><button className="mood-tag active-mood">克制</button><button className="mood-tag">孤独</button><button className="mood-tag">期待</button></div></div><div className="field-group"><span className="field-label">不可改变</span><div className="constraint-box"><span className="lock-symbol">◇</span><span>人物保持沉默，不添加额外角色</span></div></div><div className="context-note"><span className="note-line"/><p>场景对象的<strong>位置、缩放和图层关系</strong>也会成为下一阶段 AI 评审的结构化上下文。</p></div><button className="review-button"><Icon name="spark"/>评审这一镜 <span>→</span></button><div className="mode-caption"><span className="mode-dot"/>演示模式 <span>·</span> AI 评审尚未运行</div></div>:tab==="object"?<div className="object-panel">{selected?<><div className="object-title"><span className="layer-swatch large-swatch" style={{backgroundColor:selected.tint}}/><div><span className="panel-eyebrow">SELECTED OBJECT</span><h2>{selected.name}</h2><p>{selected.kind} · 图层 {selected.z+1}</p></div></div><div className="object-actions"><button onClick={()=>toggleLock(selected.id)}><Icon name="lock"/>{selected.locked?"解锁":"锁定"}</button><button onClick={()=>moveZ(selected.id,1)}><Icon name="up"/>上移</button><button onClick={()=>moveZ(selected.id,-1)}><Icon name="down"/>下移</button></div><div className="property-grid"><label><span>X</span><input type="number" min="0" max="100" value={Math.round(selected.x*100)} onChange={(e)=>updateLayer(selected.id,{x:clamp(Number(e.target.value)/100,.03,.97)})}/><small>%</small></label><label><span>Y</span><input type="number" min="0" max="100" value={Math.round(selected.y*100)} onChange={(e)=>updateLayer(selected.id,{y:clamp(Number(e.target.value)/100,.05,.95)})}/><small>%</small></label><label><span>缩放</span><input type="number" min="45" max="220" value={Math.round(selected.scale*100)} disabled={selected.locked} onChange={(e)=>updateLayer(selected.id,{scale:clamp(Number(e.target.value)/100,.45,2.2)})}/><small>%</small></label><label><span>旋转</span><input type="number" min="-180" max="180" value={Math.round(selected.rotation)} disabled={selected.locked} onChange={(e)=>updateLayer(selected.id,{rotation:clamp(Number(e.target.value),-180,180)})}/><small>°</small></label></div><div className={`lock-note ${selected.locked?"visible":""}`}><Icon name="lock"/><span>{selected.locked?"该图层已锁定，画布拖动和变换已禁用。":"拖动对象移动；拖动右下角控制点等比缩放。"}</span></div><button className="delete-button" onClick={deleteSelected} disabled={selected.locked}><Icon name="trash"/>删除对象</button></>:<div className="assistant-empty"><h2>没有选中对象</h2><p>点击舞台中的角色、列车或灯箱，查看并调整它的属性。</p></div>}</div>:<div className="assistant-empty"><span className="assistant-icon"><Icon name="spark"/></span><h2>先听听 AI 怎么看</h2><p>运行评审后，AI 会结合画面截图和当前对象坐标给出建议。</p><button onClick={()=>setTab("intent")}>返回创作意图 <Icon name="arrow"/></button></div>}
+        {tab==="intent"?<div className="intent-panel"><div className="intent-heading"><span className="panel-eyebrow">SHOT DIRECTION</span><h2>这一镜想表达什么？</h2><p>让评审和生成都围绕你的叙事目标展开。</p></div><label className="field-label" htmlFor="intent">导演意图</label><textarea id="intent" value={intent} onChange={(e)=>setIntent(e.target.value)}/><div className="field-row"><label><span className="field-label">镜头类型</span><button className="select-field">中景 <span>⌄</span></button></label><label><span className="field-label">镜头时长</span><button className="select-field">4 秒 <span>⌄</span></button></label></div><div className="field-group"><span className="field-label">情绪基调</span><div className="mood-tags"><button className="mood-tag active-mood">克制</button><button className="mood-tag">孤独</button><button className="mood-tag">期待</button></div></div><div className="field-group"><span className="field-label">不可改变</span><div className="constraint-box"><span className="lock-symbol">◇</span><span>人物保持沉默，不添加额外角色</span></div></div><div className="context-note"><span className="note-line"/><p>场景对象的<strong>位置、缩放和图层关系</strong>会与画面快照一起成为 AI 评审的结构化上下文。</p></div><button className="review-button" onClick={runReview} disabled={reviewStatus==="loading"}><Icon name="spark"/>{reviewStatus==="loading"?"评审中…":"评审这一镜"} <span>→</span></button><div className="mode-caption"><span className="mode-dot"/>Mock 演示模式 <span>·</span> {reviewResult?"已有结构化结论":"无需 API Key"}</div></div>:tab==="object"?<div className="object-panel">{selected?<><div className="object-title"><span className="layer-swatch large-swatch" style={{backgroundColor:selected.tint}}/><div><span className="panel-eyebrow">SELECTED OBJECT</span><h2>{selected.name}</h2><p>{selected.kind} · 图层 {selected.z+1}</p></div></div><div className="object-actions"><button onClick={()=>toggleLock(selected.id)}><Icon name="lock"/>{selected.locked?"解锁":"锁定"}</button><button onClick={()=>moveZ(selected.id,1)}><Icon name="up"/>上移</button><button onClick={()=>moveZ(selected.id,-1)}><Icon name="down"/>下移</button></div><div className="property-grid"><label><span>X</span><input type="number" min="0" max="100" value={Math.round(selected.x*100)} onChange={(e)=>updateLayer(selected.id,{x:clamp(Number(e.target.value)/100,.03,.97)})}/><small>%</small></label><label><span>Y</span><input type="number" min="0" max="100" value={Math.round(selected.y*100)} onChange={(e)=>updateLayer(selected.id,{y:clamp(Number(e.target.value)/100,.05,.95)})}/><small>%</small></label><label><span>缩放</span><input type="number" min="45" max="220" value={Math.round(selected.scale*100)} disabled={selected.locked} onChange={(e)=>updateLayer(selected.id,{scale:clamp(Number(e.target.value)/100,.45,2.2)})}/><small>%</small></label><label><span>旋转</span><input type="number" min="-180" max="180" value={Math.round(selected.rotation)} disabled={selected.locked} onChange={(e)=>updateLayer(selected.id,{rotation:clamp(Number(e.target.value),-180,180)})}/><small>°</small></label></div><div className={`lock-note ${selected.locked?"visible":""}`}><Icon name="lock"/><span>{selected.locked?"该图层已锁定，画布拖动和变换已禁用。":"拖动对象移动；拖动右下角控制点等比缩放。"}</span></div><button className="delete-button" onClick={deleteSelected} disabled={selected.locked}><Icon name="trash"/>删除对象</button></>:<div className="assistant-empty"><h2>没有选中对象</h2><p>点击舞台中的角色、列车或灯箱，查看并调整它的属性。</p></div>}</div>:<ReviewPanel status={reviewStatus} result={reviewResult} error={reviewError} stale={reviewIsStale} activeFindingId={activeFindingId} onSelectFinding={selectFinding} onRunReview={runReview} onBackToIntent={()=>setTab("intent")}/>}
         <div className="right-bottom"><span className="help-mark">?</span><span>编辑器指南</span><span className="footer-spacer"/><span className="shortcut-label">Delete 删除 · ⇧方向键快移</span></div>
       </aside>
     </div>

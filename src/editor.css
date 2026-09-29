@@ -1,0 +1,186 @@
+.stage-canvas canvas {
+  cursor: grab;
+  touch-action: none;
+}
+
+.stage-canvas canvas:active,
+.stage-canvas canvas.dragging {
+  cursor: grabbing;
+}
+
+.icon-button:disabled {
+  cursor: not-allowed;
+}
+
+.object-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 20px 17px 14px;
+}
+
+.object-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #e8ece8;
+}
+
+.large-swatch {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px #29373516;
+}
+
+.object-title h2 {
+  margin: 5px 0 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.object-title p {
+  margin: 0;
+  color: #929b98;
+  font-size: 8px;
+  letter-spacing: .55px;
+}
+
+.object-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.object-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 8px 4px;
+  border: 1px solid #dfe6e0;
+  border-radius: 4px;
+  background: #fbfcfa;
+  color: #61706b;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.object-actions button:hover {
+  border-color: #b8cfc5;
+  background: #f1f7f3;
+}
+
+.object-actions svg {
+  width: 13px;
+  height: 13px;
+}
+
+.property-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 19px;
+}
+
+.property-grid label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid #e0e6e1;
+  border-radius: 4px;
+  background: #fff;
+  color: #75817d;
+  font-size: 8px;
+}
+
+.property-grid input {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #3e4d49;
+  font-size: 10px;
+  text-align: right;
+}
+
+.property-grid input:disabled {
+  color: #aab2af;
+}
+
+.property-grid small {
+  color: #a0aaa6;
+  font-size: 8px;
+}
+
+.lock-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 10px;
+  border-left: 2px solid #a7c9ba;
+  background: #f5f9f6;
+  color: #75817d;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.lock-note.visible {
+  border-left-color: #c9a76e;
+  background: #fbf8f0;
+}
+
+.lock-note svg {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  margin-top: 1px;
+}
+
+.delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 34px;
+  margin-top: auto;
+  border: 1px solid #ead8d2;
+  border-radius: 4px;
+  background: #fffafa;
+  color: #a76557;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.delete-button:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+
+.delete-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 860px) {
+  .object-panel {
+    min-height: 440px;
+  }
+}
+
+@media (max-width: 600px) {
+  .tool-group .icon-button:nth-of-type(2) {
+    display: grid;
+  }
+}

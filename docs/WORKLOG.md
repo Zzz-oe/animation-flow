@@ -16,20 +16,24 @@
 
 使用完整的“意图 → 编辑 → 评审 → 建议决策 → 生成候选 → 对比 → 接受/拒绝/迭代”闭环，避免将产品缩减为聊天框或单次文生图。保留历史和候选是控制权、可解释性及失败恢复的基础。
 
-## 技术判断
+## 技术判断（2026-09-30 校正）
 
-工作区 `work/scene-pilot` 已建立 React + TypeScript + Vite 骨架，浏览器原生 Canvas 首次绘制验证代码已添加。TypeScript 静态检查和 Vite 生产构建均通过；当前执行环境默认 esbuild config loader 因上层路径访问限制失败，显式采用 Vite runner config loader 后构建正常。因此 `dev`、`build`、`preview` 脚本固定使用 runner loader。生产预览在本地 4173 端口运行且 HTTP 返回 200。dev server 虽报告 ready，但依赖预打包随后因沙箱访问路径失败。暂不据此认定原生 Canvas 是最终选型；产品编辑能力开发前仍应评估成熟 Canvas 库，避免重复实现对象变换。
+- 代码位于仓库根目录：`src/`（应用）、`docs/`（评测与记录）、`scripts/`（工具）。早期草稿路径 `work/scene-pilot` 已作废，`DEVELOPMENT_LOG.md` 中出现该路径的条目只反映当时的实际情况，不代表当前结构。
+- 技术栈：React 19 + TypeScript 5.9 + Vite 7，`package.json` 的 name 为 `scene-pilot`。纯前端，无后端依赖，Mock 模式无凭据可完整运行。
+- `dev`、`build`、`preview` 三个脚本固定使用 `--configLoader runner`。默认的 esbuild config loader 在受限执行环境会因上层路径访问限制失败，runner loader 已验证可用，不需要额外提权。
+- 生产构建验证方式：`npm run build`（`tsc -b && vite build`）。2026-09-30 复验通过，Vite v7.3.6，34 modules transformed，exit code 0。
+- Canvas 选型已定：继续使用浏览器原生 Canvas 配合结构化 `SceneLayer`，不引入 Konva/Fabric（依据见「阶段 2 编辑器决策」）。早期“暂不认定原生 Canvas 是最终选型”的判断已被阶段 2 决策取代。
+- 公开仓库：https://github.com/Zzz-oe/animation-flow 。2026-09-30 实测直连与 gh-proxy 代理两条通道的 `git ls-remote` 均返回同一 HEAD，`main` 与远端一致。
 
 ## 失败案例与经验
 
-目前尚未开始产品实现，没有实际失败案例可记录。后续必须记录真实发生的失败、触发条件、影响、根因、修复或未修复原因；不可为了交付文档虚构失败。
+阶段 2、阶段 3 已产生可核验的失败案例，分别见「阶段 2 实际测试发现」与「阶段 3 实际测试发现」。规则：只记录真实发生的失败及其触发条件、影响、根因、修复或未修复原因，不为交付文档虚构失败。
 
 ## 待验证问题
 
-- 当前工作区是否已有应用代码或部署目标？
-- Canvas 库、图像资产和模型 API 的可用性及安全边界是什么？
-- 哪些动画评审维度能通过场景化测试证明有效？
-- 真实生成能否在既定环境中可靠地产出可比较候选？
+- Canvas 库与图像资产方案：已定（原生 Canvas + 结构化图层，本阶段不引入图像素材）。模型 API 的可用性与安全边界仍在阶段 5 验证。
+- 哪些动画评审维度能通过场景化测试证明有效：阶段 3 已用叙事主体、构图层级、情绪氛围、约束遵循四个维度跑通标准场景与隐藏列车场景，仍需补充更多案例（阶段 6）。
+- 真实生成能否在既定环境中可靠地产出可比较候选：阶段 4 先用 Mock 验证交互，阶段 5 再验证真实模型。
 
 ## 阶段 1 工作区决策
 

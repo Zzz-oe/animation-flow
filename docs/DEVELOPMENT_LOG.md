@@ -125,3 +125,37 @@
 - 实际人工耗时：待用户补充；Codex 执行时间不计入用户本人耗时。
 - 失败案例/教训：首次严格构建发现数字校验未形成 TypeScript 类型缩窄，补充类型谓词后通过；一次过宽浏览器文本定位器超时，刷新 AX 状态确认点击已成功，避免盲目重试。
 - 后续：实现每条建议的选择/排除、补充指令与保护约束；根据所选 finding 生成隔离的候选修正版，并提供前后比较、接受、拒绝、恢复和历史记录。
+
+### 2026-09-30 | 文档事实校正与 Token 记录机制
+
+- 目标：校正文档与实际代码结构的偏差，建立可复现的真实 Token 用量记录流程，并确认公开仓库可访问。
+- 完成：
+  - 校正 `docs/WORKLOG.md`：「技术判断」段改写为当前事实（代码位于仓库根目录 `src/`，早期草稿路径 `work/scene-pilot` 已作废，Canvas 选型已由阶段 2 决策确定）；「失败案例与经验」「待验证问题」两段同步更新，不再保留“尚未开始产品实现”这类过时表述。
+  - 新增 `scripts/token-usage.mjs`：读取本机 WorkBuddy 会话记录中的 `usage` 字段，汇总真实 Token 用量并输出 Markdown（支持 `--all`、`--dir`、`--out`）。
+  - 新增 `docs/TOKEN_USAGE.md` 用量台账，记录口径、取数命令与逐次用量。
+  - 更新 `AGENTS.md`：新增「每次会话必须记录 Token 用量」条款，写明取数命令、数据源与计费口径；补上公开仓库地址。
+  - 更新 `README.md`：补文档导航、公开仓库地址与 Token 统计命令。
+  - `git remote origin` 由 gh-proxy 代理地址改为真实仓库地址 `https://github.com/Zzz-oe/animation-flow.git`。
+- 决策/取舍：
+  - Token 用量不做字符数估算，直接读取运行时写入的 `usage` 字段，数字可核验、可复现。
+  - 计费口径以原始记录为准：`total_tokens = input_tokens + output_tokens`，`cache_read_input_tokens` 是 `input_tokens` 的子集。第一版脚本按“input + cache_read + output”累加，属重复计数，已修正。
+  - remote 改为直连，依据是实测直连与代理两条通道返回同一 HEAD；若后续推送受网络影响，可临时切回代理地址。
+- 验证：
+  - `git ls-remote --heads` 直连与 gh-proxy 代理均返回 `418908c7ea515957c2dbab433a3bcbf4f9d49507`，与本地 `main` 一致。
+  - `git remote -v` 已确认为 `https://github.com/Zzz-oe/animation-flow.git`。
+  - `node scripts/token-usage.mjs --out <file>` 成功解析会话记录并输出汇总，数据见 `docs/TOKEN_USAGE.md`。
+  - `npm run build` 通过（tsc -b 无错，Vite v7.3.6，34 modules，exit 0）。
+- 未完成/风险：
+  - 本条目的 Token 数字是会话进行中取得的读数，属部分值；最终数字应在会话结束时重新取数。
+  - 会话记录的 `usage` 字段由运行时写入，若工具版本变更导致字段改名，脚本需同步调整（脚本对缺失字段按 0 处理，不会崩溃）。
+  - 人工耗时只能由用户本人记录，AI 无法代填。
+- AI Coding 工具：WorkBuddy（当前任务，模型 deepseek-v4.1-flash）。
+- Token 用量：截至 2026-09-30 10:05:33，54 个有效 API 回合；未缓存输入 115,135，缓存命中输入 4,564,608，输入合计 4,679,743，输出 36,550，**总计 4,716,293**（会话进行中，部分值）。
+- Token 最多的部分：每回合重发完整上下文产生的输入（占全部输入的 97.5% 为缓存命中）。输出仅 36,550，消耗集中在上下文而非生成。
+- 人工耗时最多部分（不计 LLM 直接完成的工作）：用户确认三项待办（Token 记录方式、过时文档校正、仓库地址可访问性）。
+- 实际人工耗时：待用户补充。
+- 失败案例/教训：
+  - PowerShell 5.1 的 `ConvertFrom-Json` 无法解析本会话记录的超长单行 JSON，返回对象属性全为空且不报错；改用 Node 解析。
+  - PS 5.1 的 `Out-File -Encoding UTF8` 经管道会把 Node 的 UTF-8 输出解码成乱码；给脚本加 `--out` 参数让其直接写 UTF-8 文件。
+  - 第一版 Token 口径把缓存读取重复累加，使总量虚高近一倍；通过比对 `total_tokens` 字段自校验发现并修正。
+- 后续：进入阶段 4，实现建议确认与候选修正闭环；提交时按 AGENTS.md 同步更新 `docs/DEVELOPMENT_SPEC.md` 的阶段状态。

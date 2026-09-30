@@ -82,6 +82,8 @@
   transition: border-color .18s, box-shadow .18s, transform .18s;
 }
 .finding-card:hover, .finding-card.active-finding { border-color: #9ebbae; box-shadow: 0 6px 18px #354d4214; transform: translateY(-1px); }
+.finding-card.selected-finding { background: #f6faf8; box-shadow: inset 0 0 0 1px #93bbaa; }
+.finding-card.selected-finding .finding-index { background: #4f806c; color: #fff; }
 .finding-card.severity-high { border-left-color: #bb6658; }
 .finding-card.severity-medium { border-left-color: #bf9151; }
 .finding-index { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; background: #eef4f0; color: #5b7569; font: 600 9px/1 Georgia, serif; }
@@ -101,6 +103,15 @@
 .review-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding: 10px 14px 14px; border-top: 1px solid #e7ebe8; color: #8a9691; font-size: 7px; }
 .review-footer button { border: 0; background: transparent; color: #547564; font-size: 8px; font-weight: 600; cursor: pointer; }
 .review-footer button:disabled { opacity: .35; cursor: not-allowed; }
+.revision-builder { display: grid; gap: 8px; margin: 2px 12px 14px; padding: 12px; border: 1px solid #dce5df; border-radius: 4px; background: #f8faf8; }
+.revision-selection { display: grid; gap: 3px; }
+.revision-selection span { color: #476858; font-size: 9px; font-weight: 600; }
+.revision-selection small { color: #8a9691; font-size: 7px; }
+.revision-builder label { margin-top: 3px; color: #65746e; font-size: 8px; font-weight: 600; }
+.revision-builder textarea { min-height: 55px; resize: vertical; padding: 8px; border: 1px solid #dde5df; border-radius: 3px; outline: none; background: #fff; color: #53605c; font-size: 8px; line-height: 1.55; }
+.revision-builder textarea:focus { border-color: #83ad9b; box-shadow: 0 0 0 2px #6b9c8715; }
+.generate-revision { display: flex; align-items: center; justify-content: space-between; min-height: 34px; padding: 0 11px; border: 1px solid #3d7967; border-radius: 3px; background: #3d7967; color: #fff; font-size: 8px; font-weight: 600; cursor: pointer; }
+.generate-revision:disabled { cursor: not-allowed; opacity: .4; }
 
 .review-loading, .review-error {
   display: flex;

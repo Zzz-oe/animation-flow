@@ -81,6 +81,8 @@
   cursor: pointer;
   transition: border-color .18s, box-shadow .18s, transform .18s;
 }
+.finding-select { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; color: #527363; font-size: 7px; font-weight: 600; cursor: pointer; }
+.finding-select input { width: 12px; height: 12px; margin: 0; accent-color: #557c69; }
 .finding-card:hover, .finding-card.active-finding { border-color: #9ebbae; box-shadow: 0 6px 18px #354d4214; transform: translateY(-1px); }
 .finding-card.severity-high { border-left-color: #bb6658; }
 .finding-card.severity-medium { border-left-color: #bf9151; }
@@ -142,6 +144,31 @@
 }
 .review-region::before { content: "AI NOTE"; position: absolute; top: -17px; left: -1px; padding: 3px 5px; background: #d7a33c; color: #fff; font-size: 6px; letter-spacing: .7px; }
 @keyframes region-arrive { from { opacity: 0; transform: scale(.96); } }
+
+.revision-workflow, .revision-history { margin: 2px 11px 13px; border: 1px solid #dce6e0; border-radius: 5px; background: #fbfdfb; }
+.revision-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; padding: 12px 12px 9px; }
+.revision-heading h3 { margin: 3px 0 0; color: #35453f; font: 600 12px/1.2 Georgia, serif; }
+.revision-heading > span { color: #73837c; font-size: 8px; }
+.revision-heading > button { border: 0; background: transparent; color: #93693e; font-size: 8px; font-weight: 600; cursor: pointer; }
+.revision-instruction { display: grid; gap: 6px; padding: 0 12px 10px; color: #697872; font-size: 8px; font-weight: 600; }
+.revision-instruction textarea { min-height: 48px; resize: vertical; padding: 8px; border: 1px solid #dde5e0; border-radius: 3px; outline: 0; background: #fff; color: #46544f; font: 8px/1.55 inherit; }
+.revision-instruction textarea:focus { border-color: #82a392; box-shadow: 0 0 0 2px #82a39219; }
+.protection-note { display: grid; gap: 4px; margin: 0 12px 10px; padding: 8px; border-left: 2px solid #9ebbaa; background: #f1f6f3; color: #6b7974; font-size: 7px; line-height: 1.5; }
+.protection-note b { color: #486558; font-size: 7px; letter-spacing: .4px; }
+.generation-error { margin: 0 12px 9px; padding: 8px; border-left: 2px solid #bd6b5e; background: #fff5f3; color: #955044; font-size: 8px; line-height: 1.5; }
+.generate-button { display: flex; align-items: center; justify-content: space-between; width: calc(100% - 24px); margin: 0 12px 12px; padding: 10px 11px; border: 0; border-radius: 3px; background: #496c5c; color: #fff; font-size: 9px; font-weight: 600; cursor: pointer; }
+.generate-button:disabled { opacity: .42; cursor: not-allowed; }
+.candidate-card { margin: 0 8px 8px; padding: 10px; border: 1px solid #cbdcd3; border-radius: 4px; background: #fff; }
+.candidate-title { display: flex; justify-content: space-between; gap: 10px; }
+.candidate-title div { display: grid; gap: 3px; }.candidate-title strong { color: #354b42; font-size: 10px; }.candidate-title small { color: #87948f; font-size: 7px; }.candidate-title > span { color: #567665; font-size: 8px; }
+.compare-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 10px 0; padding: 3px; border-radius: 3px; background: #eef3f0; }
+.compare-toggle button { padding: 6px; border: 0; border-radius: 2px; background: transparent; color: #74817c; font-size: 8px; cursor: pointer; }.compare-toggle button.active { background: #fff; color: #365648; box-shadow: 0 2px 6px #31463d17; font-weight: 600; }
+.candidate-card ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }.candidate-card li { display: grid; grid-template-columns: 62px 1fr; gap: 6px; color: #6b7974; font-size: 7px; line-height: 1.45; }.candidate-card li b { color: #496559; }
+.candidate-card details { margin-top: 9px; padding-top: 8px; border-top: 1px solid #edf0ee; color: #7c8984; font-size: 7px; line-height: 1.5; }.candidate-card summary { color: #587367; cursor: pointer; }.candidate-card details p { margin: 6px 0 0; }
+.candidate-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 6px; margin-top: 10px; }.candidate-actions button { padding: 8px; border-radius: 3px; font-size: 8px; font-weight: 600; cursor: pointer; }.reject-button { border: 1px solid #dfe5e1; background: #fff; color: #7a6862; }.accept-button { border: 1px solid #496d5c; background: #496d5c; color: #fff; }
+.revision-history ol { display: grid; gap: 8px; margin: 0; padding: 0 12px 12px; list-style: none; }.revision-history li { display: grid; grid-template-columns: 7px 1fr; gap: 7px; align-items: start; }.revision-history li i { width: 6px; height: 6px; margin-top: 3px; border-radius: 50%; background: #8cad9d; }.revision-history li span { display: grid; gap: 2px; }.revision-history li b { color: #52665d; font-size: 8px; }.revision-history li small { color: #8b9692; font-size: 7px; line-height: 1.4; }
+
+.preview-badge { position: absolute; z-index: 5; top: 13px; left: 13px; display: grid; gap: 2px; padding: 7px 9px; border-left: 3px solid #9fc8b5; background: #18352bcc; color: #fff; pointer-events: none; }.preview-badge b { font-size: 7px; letter-spacing: 1px; }.preview-badge span { color: #d8e8e0; font-size: 7px; }.candidate-preview.original .preview-badge { border-left-color: #d6b77b; background: #3b342acc; }
 
 @media (max-width: 860px) {
   .review-panel { min-height: 520px; }

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { ReviewFinding, ReviewResult } from "./review";
 import type { CandidateRevision } from "./revision";
 
@@ -32,6 +33,8 @@ type ReviewPanelProps = {
 const severityLabel = { high: "优先", medium: "建议", low: "精修" } as const;
 
 export default function ReviewPanel({ status, result, error, stale, activeFindingId, onSelectFinding, onRunReview, onBackToIntent, selectedFindingIds, onToggleFinding, additionalInstruction, onInstructionChange, generationStatus, generationError, candidate, previewMode, onPreviewModeChange, onGenerate, onAccept, onReject, onRestore, canRestore, history }: ReviewPanelProps) {
+  const [providerMode, setProviderMode] = useState<"mock" | "live">("mock");
+  const changeProvider = (mode: "mock" | "live") => { setProviderMode(mode); window.dispatchEvent(new CustomEvent("scene-pilot:provider", { detail: mode })); };
   if (status === "idle") return <div className="assistant-empty review-empty"><span className="assistant-icon" aria-hidden="true">✦</span><h2>先听听 AI 怎么看</h2><p>评审会读取画面快照、对象关系和导演意图，给出可定位、可执行的建议。</p><button onClick={onBackToIntent}>返回创作意图 <span aria-hidden="true">→</span></button></div>;
 
   if (status === "loading") return <div className="review-loading" role="status" aria-live="polite"><span className="review-orbit" aria-hidden="true"><i/><i/><i/></span><span className="panel-eyebrow">MOCK REVIEW</span><h2>正在读这一镜</h2><p>分析叙事主体、构图层级、情绪氛围与不可改变约束…</p><div className="review-loading-steps"><span className="done">画面快照</span><span className="active">场景关系</span><span>结构化建议</span></div></div>;
@@ -43,8 +46,9 @@ export default function ReviewPanel({ status, result, error, stale, activeFindin
   return <div className="review-panel">
     <div className="review-summary">
       <div className="score-ring" aria-label={`综合评分 ${result.overallScore} 分`}><strong>{result.overallScore}</strong><small>/ 100</small></div>
-      <div><div className="review-kicker"><span>镜头评审</span><i>MOCK</i></div><p>{result.summary}</p></div>
+      <div><div className="review-kicker"><span>镜头评审</span><i>{result.provider === "live" ? "LIVE" : "MOCK"}</i></div><p>{result.summary}</p></div>
     </div>
+    <div className="provider-switch" role="group" aria-label="AI 服务模式"><span>AI 服务</span><div><button className={providerMode === "mock" ? "active" : ""} onClick={() => changeProvider("mock")}>Mock</button><button className={providerMode === "live" ? "active" : ""} onClick={() => changeProvider("live")}>真实 API</button></div><small>{providerMode === "live" ? "同源服务端代理 · 浏览器不保存密钥" : "无需 API Key · 稳定演示"}</small></div>
     {stale && <div className="stale-review" role="status"><strong>画面已改变</strong><span>下方结论对应上一次评审。重新运行可避免根据旧画面做决定。</span><button onClick={onRunReview}>重新评审</button></div>}
     <div className="dimension-grid" aria-label="评审维度">
       {result.dimensions.map((dimension) => <div className="dimension-row" key={dimension.name} title={dimension.observation}><span>{dimension.name}</span><div><i style={{ width: `${dimension.score}%` }}/></div><strong>{dimension.score}</strong></div>)}
@@ -60,7 +64,7 @@ export default function ReviewPanel({ status, result, error, stale, activeFindin
       <div className="protection-note"><b>保护项</b><span>人物保持沉默 · 不增加角色 · 未选建议对应区域保持不变</span></div>
       {generationError && <div className="generation-error" role="alert">{generationError}</div>}
       {!candidate ? <button className="generate-button" onClick={onGenerate} disabled={!selectedFindingIds.length || generationStatus === "loading"}>{generationStatus === "loading" ? "正在生成隔离候选…" : "生成候选修正版"}<span>→</span></button> : <div className="candidate-card">
-        <div className="candidate-title"><div><strong>候选修正版</strong><small>MOCK · 尚未应用到原稿</small></div><span>{candidate.changes.length} 处变化</span></div>
+        <div className="candidate-title"><div><strong>候选修正版</strong><small>{candidate.provider === "live" ? "LIVE" : "MOCK"} · 尚未应用到原稿</small></div><span>{candidate.changes.length} 处变化</span></div>
         <div className="compare-toggle"><button className={previewMode === "original" ? "active" : ""} onClick={() => onPreviewModeChange("original")}>原稿</button><button className={previewMode === "candidate" ? "active" : ""} onClick={() => onPreviewModeChange("candidate")}>候选</button></div>
         <ul>{candidate.changes.map((change) => <li key={`${change.layerId}-${change.summary}`}><b>{change.layerName}</b>{change.summary}</li>)}</ul>
         <details><summary>查看生成依据</summary><p>{candidate.promptSummary}</p></details>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, ty
 import ReviewPanel, { type ReviewStatus } from "./ReviewPanel";
 import { mockReviewProvider, sceneFingerprint, type ReviewFinding, type ReviewResult } from "./review";
 import { mockRevisionProvider, type CandidateRevision } from "./revision";
+import { liveReviewProvider, liveRevisionProvider } from "./live";
 import { cloneLayers, DEFAULT_LAYERS, drawScene, getResizeHandle, hitTestLayer, type SceneLayer } from "./scene";
 
 const STORAGE_KEY = "scene-pilot:stage-2";
@@ -60,6 +61,8 @@ function App() {
   const [previewMode, setPreviewMode] = useState<"original" | "candidate">("original");
   const [restorePoint, setRestorePoint] = useState<SceneLayer[] | null>(null);
   const [decisionHistory, setDecisionHistory] = useState<Array<{ id: string; label: string; detail: string }>>([]);
+  const [providerMode, setProviderMode] = useState<"mock" | "live">("mock");
+  useEffect(() => { const onProvider = (event: Event) => setProviderMode((event as CustomEvent<"mock" | "live">).detail); window.addEventListener("scene-pilot:provider", onProvider); return () => window.removeEventListener("scene-pilot:provider", onProvider); }, []);
   const selected = layers.find((layer) => layer.id === selectedLayer) ?? null;
   const activeFinding = reviewResult?.findings.find((finding) => finding.id === activeFindingId) ?? null;
   const activeTarget = activeFinding?.targetIds?.map((id) => layers.find((layer) => layer.id === id)).find(Boolean);
@@ -137,7 +140,8 @@ function App() {
     setActiveFindingId(null);
     setTab("assistant");
     try {
-      const result = await mockReviewProvider.review({
+      const reviewProvider = providerMode === "live" ? liveReviewProvider : mockReviewProvider;
+      const result = await reviewProvider.review({
         intent,
         shotType: "中景",
         durationSeconds: 4,
@@ -184,7 +188,8 @@ function App() {
     setGenerationStatus("loading");
     setGenerationError("");
     try {
-      const nextCandidate = await mockRevisionProvider.generateRevision({
+      const revisionProvider = providerMode === "live" ? liveRevisionProvider : mockRevisionProvider;
+      const nextCandidate = await revisionProvider.generateRevision({
         intent,
         constraints: ["人物保持沉默", "不添加额外角色", "未选建议对应区域保持不变"],
         additionalInstruction,
@@ -195,7 +200,7 @@ function App() {
       setCandidate(nextCandidate);
       setPreviewMode("candidate");
       setGenerationStatus("idle");
-      setDecisionHistory((items) => [{ id: `generated-${Date.now()}`, label: "生成候选", detail: `${nextCandidate.findingIds.length} 条建议 · ${nextCandidate.changes.length} 处变化 · Mock` }, ...items].slice(0, 12));
+      setDecisionHistory((items) => [{ id: `generated-${Date.now()}`, label: "生成候选", detail: `${nextCandidate.findingIds.length} 条建议 · ${nextCandidate.changes.length} 处变化 · ${providerMode === "live" ? "真实模式" : "Mock"}` }, ...items].slice(0, 12));
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setGenerationError(error instanceof Error ? error.message : "候选生成失败；原稿未被修改");

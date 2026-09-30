@@ -40,6 +40,11 @@
 .review-kicker span { color: #35453f; font: 600 13px/1.2 Georgia, serif; }
 .review-kicker i { padding: 3px 5px; border-radius: 2px; background: #dceae3; color: #587465; font-size: 7px; font-style: normal; letter-spacing: .7px; }
 .review-summary p { margin: 7px 0 0; color: #697873; font-size: 9px; line-height: 1.65; }
+.provider-switch { display: grid; gap: 6px; margin: 12px 14px 0; padding: 9px 10px; border: 1px solid #dfe8e2; border-radius: 4px; background: #fbfdfb; color: #66766f; font-size: 8px; }
+.provider-switch > div { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.provider-switch button { padding: 6px; border: 1px solid #dce5df; border-radius: 3px; background: #fff; color: #718079; font-size: 8px; cursor: pointer; }
+.provider-switch button.active { border-color: #557c69; background: #557c69; color: #fff; }
+.provider-switch small { color: #89958f; font-size: 7px; }
 
 .stale-review {
   display: grid;

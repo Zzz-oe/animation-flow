@@ -184,3 +184,9 @@
     display: grid;
   }
 }
+.applied-candidate-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; border-radius: inherit; pointer-events: none; }
+.stage-canvas .safe-frame, .stage-canvas .canvas-note, .stage-canvas .review-region { z-index: 3; }
+.add-shot:disabled, .select-field:disabled, .zoom-button:disabled, .timeline-toggle:disabled { cursor: not-allowed; opacity: .62; }
+.preset-list { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 12px; }
+.preset-button { border: 1px solid rgba(214,183,137,.28); background: rgba(255,255,255,.04); color: #c9d0cd; border-radius: 999px; padding: 5px 9px; font: inherit; font-size: 11px; cursor: pointer; }
+.preset-button:hover { border-color: #d6b789; color: #fff; }

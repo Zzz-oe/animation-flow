@@ -94,4 +94,13 @@
 
 - 新增根目录 `server.mjs`，使用 Node 内置 `http` 和 `fetch`，启动 `npm run api` 后监听 `127.0.0.1:8787`；Vite 开发服务器将 `/api` 代理到该端口。
 - 代理只读取服务端 `.env.local`，请求上游 Responses API，要求模型返回 JSON object，并将上游错误转换为 JSON 错误；浏览器仍不会接触密钥。
-- 当前只实现真实评审 `/api/review`；真实图像生成 `/api/revision` 尚未实现，避免把文本评审结果伪装成图像编辑能力。
+- 初版代理只实现真实评审 `/api/review`；后续已增加真实图像候选 `/api/revision`。候选图片经过 URL/任务轮询解析后才进入隔离候选，不把未知响应伪装成成功。
+- 2026-10-02 将评审请求从“把画面 data URL 拼入提示词”改为 Responses 风格的 `input_image` 多模态输入，并把 JSON mode 升级为严格 JSON schema。服务端补充 45 秒默认超时、`GET /api/health` 和 `.env.example`；健康检查只报告配置状态，不调用上游模型。
+- 当前本机代理健康检查显示评审配置存在，但未发起计费的端到端请求，因此只能证明配置和本地边界可用，不能证明所配置上游模型完整支持该 schema 或评审质量达标。
+- 2026-10-02 经用户确认后执行真实回归：当前 `.env.local` 为自定义 `maas.qianwenaiapi.com` 端点与 `qwen-vl-max`。Responses 路径和自动切换后的 Chat Completions 路径均收到 `Unsupported model: 'qwen-vl-max'`；官方 DashScope 文档显示接口形式正确，但当前 endpoint 的模型目录不接受该模型名。此失败已保留，不继续盲试其他模型以控制费用。
+- 用户提供阿里云 Qwen3.8-Flash 官方 Node 示例后，确认当前端点、模型名和 Chat Completions 协议应改为 `qwen3.8-flash`；服务端同时兼容 `OPENAI_API_KEY` 与示例中的 `DASHSCOPE_API_KEY`，但密钥仍只从服务端环境读取。
+- 用户提供 Qwen-Image-2.0-Pro 的 DashScope `MultiModalConversation` 示例后，新增 `/api/revision` 图像候选边界：输入当前 Canvas 快照和选中建议，返回隔离候选图片，不改原稿。首次真实请求约 14.5 秒返回成功 HTTP，但响应未提取到可显示图片 URL；候选未创建，原稿保持不变，后续需按实际响应字段补充解析或处理异步任务。
+- 随后真实回归成功返回 DashScope OSS 图片 URL；服务端补充 task_id 轮询和更多图片字段解析。用户确认需要完整替换演示后，前端增加显式“接受并应用”后的舞台图片覆盖；生成仍不自动覆盖，拒绝路径保持原稿。
+- 多镜头第一轮采用 `shotsRef + activeShotId` 的轻量状态模型，先隔离图层/意图/评审生命周期，不提前重写整个 Canvas 数据结构；后续再持久化每个镜头和加入涂鸦标注。
+- 多镜头恢复采用同一份版本化前端 localStorage 快照边界：每个镜头的图层、意图、涂鸦和已应用图片分别序列化，解析失败回退默认场景；切镜头清空评审、候选和决策恢复点，同时恢复目标镜头自己的视觉状态，避免跨镜头结论串联。
+- 2026-10-02 交付收尾修正：镜头快照现在按 `shotId` 同步保存图层、意图、涂鸦和已应用图片；舞台编号/时间轴标题随当前镜头变化；真实候选图片可在舞台隔离预览，恢复接受前版本时同时恢复此前的图片覆盖状态。

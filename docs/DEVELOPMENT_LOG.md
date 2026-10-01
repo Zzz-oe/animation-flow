@@ -190,3 +190,11 @@
 - 人工耗时最多部分：用户尚未提供人工耗时；不代填。
 - 实际人工耗时：待用户补充。
 - 后续：实现最小 Node 服务端代理和环境变量校验，再决定真实模型 provider；继续保持 Mock 无凭据可运行。
+
+### 2026-10-01 | 阶段 5 最小服务端评审代理
+
+- 目标：把真实评审调用移到服务端，避免浏览器暴露 API Key。
+- 完成：新增 `server.mjs`；读取 `.env.local`；`npm run api` 启动 `127.0.0.1:8787`；Vite `/api` 代理配置；真实 `/api/review` 调用 Responses API 并要求 JSON object；补充 `package.json` API 脚本。
+- 验证：`npm run build` 通过；`node --check server.mjs` 通过；`npm run api` 成功监听 8787。未主动发起上游模型请求，避免未经确认消耗 API 额度。
+- 未完成/风险：真实 API 尚未完成端到端成功验证；真实候选图像生成仍未实现；上游模型若不遵守 JSON schema 会进入错误态。
+- 后续：用户确认预算后，再执行一次真实评审请求并根据实际响应修正 schema；随后评估图像模型接口。
